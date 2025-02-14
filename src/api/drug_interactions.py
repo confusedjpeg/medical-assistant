@@ -1,23 +1,51 @@
-def fetch_drug_interactions(drug_name):
-    """
-    Fetch drug interaction data from the NIH Drug Interaction API.
-    """
-    # Placeholder for API call to fetch drug interactions
-    # Implement API call logic here
-    pass
+import pandas as pd
+import os
 
-def analyze_interactions(interaction_data):
-    """
-    Analyze the fetched drug interaction data.
-    """
-    # Placeholder for analyzing interaction data
-    # Implement analysis logic here
-    pass
+class DrugInteractionChecker:
+    def __init__(self):
+        self.drug_data = self._load_drug_data()
+    
+    def _load_drug_data(self):
+        """Load drug interaction data from CSV file"""
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'drug_interactions.csv')
+        try:
+            return pd.read_csv(csv_path)
+        except FileNotFoundError:
+            print("Drug interaction data file not found")
+            return pd.DataFrame()
 
-def get_interaction_recommendations(drug_name):
-    """
-    Get recommendations based on drug interactions for a given drug.
-    """
-    interaction_data = fetch_drug_interactions(drug_name)
-    recommendations = analyze_interactions(interaction_data)
-    return recommendations
+    def check_interaction(self, drug1, drug2):
+        """Check if two drugs have known interactions"""
+        interactions = self.drug_data[
+            ((self.drug_data['drug1'].str.lower() == drug1.lower()) & 
+             (self.drug_data['drug2'].str.lower() == drug2.lower())) |
+            ((self.drug_data['drug1'].str.lower() == drug2.lower()) & 
+             (self.drug_data['drug2'].str.lower() == drug1.lower()))
+        ]
+        return interactions['interaction_effect'].tolist() if not interactions.empty else []
+
+    def get_drug_info(self, drug_name):
+        """Get general information about a drug"""
+        drug_info = self.drug_data[self.drug_data['drug1'] == drug_name]
+        return drug_info.to_dict('records') if not drug_info.empty else {}
+
+    def get_all_drugs(self):
+        """Get list of all drugs in the database"""
+        return list(set(self.drug_data['drug1'].tolist() + self.drug_data['drug2'].tolist()))
+
+def get_interaction_recommendations(drug_list):
+    """Get all potential interactions for a list of drugs"""
+    checker = DrugInteractionChecker()
+    interactions = []
+    
+    for i, drug1 in enumerate(drug_list):
+        for drug2 in drug_list[i+1:]:
+            interaction = checker.check_interaction(drug1, drug2)
+            if interaction:
+                interactions.append({
+                    'drug1': drug1,
+                    'drug2': drug2,
+                    'effect': interaction[0]
+                })
+    
+    return interactions

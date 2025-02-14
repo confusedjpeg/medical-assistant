@@ -2,6 +2,16 @@ from flask import Flask, render_template, request
 from api.drug_interactions import fetch_drug_interactions
 from api.medicine_data import get_medicine_data
 from ml.model import predict_medicine
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # Loads the variables from the .env file
+
+secret_key = os.getenv('SECRET_KEY')
+database_url = os.getenv('DATABASE_URL')
+debug_mode = os.getenv('DEBUG')
+
+print(secret_key, database_url, debug_mode)
 
 app = Flask(__name__)
 
