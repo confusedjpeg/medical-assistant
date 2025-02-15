@@ -1,37 +1,42 @@
-from flask import Flask, render_template, request
-from api.drug_interactions import fetch_drug_interactions
-from api.medicine_data import get_medicine_data
-from ml.model import predict_medicine
+from flask import Flask, render_template, request, jsonify
+from src.api.drug_interactions import DrugInteractionChecker
+from src.api.medicine_data import get_medicine_data, get_all_medicines
+from src.ml.model import MedicalAssistantModel
 from dotenv import load_dotenv
 import os
 
 load_dotenv()  # Loads the variables from the .env file
 
-secret_key = os.getenv('SECRET_KEY')
-database_url = os.getenv('DATABASE_URL')
-debug_mode = os.getenv('DEBUG')
-
-print(secret_key, database_url, debug_mode)
-
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY')
+
+# In-memory storage for user inventory (for simplicity)
+user_inventory = []
 
 @app.route('/')
 def home():
     return render_template('home.html')
 
+@app.route('/add_medicine', methods=['POST'])
+def add_medicine():
+    medicine_name = request.json['medicine_name']
+    user_inventory.append(medicine_name)
+    return jsonify({'status': 'success', 'inventory': user_inventory})
+
 @app.route('/predict', methods=['POST'])
 def predict():
-    medicines = request.form.getlist('medicines')
-    symptoms = request.form.getlist('symptoms')
+    symptoms = request.json['symptoms']
+    model = MedicalAssistantModel()
+    predicted_medicines, medicine_details, interactions = model.predict([symptoms])
     
-    # Fetch drug interactions and medicine data
-    interactions = fetch_drug_interactions(medicines)
-    medicine_data = get_medicine_data(medicines)
+    # Filter predictions based on user inventory
+    inventory_predictions = [med for med in predicted_medicines if med in user_inventory]
     
-    # Predict the recommended medicine based on symptoms
-    recommended_medicine = predict_medicine(symptoms, medicine_data)
-    
-    return render_template('results.html', interactions=interactions, recommended_medicine=recommended_medicine)
+    return jsonify({
+        'predicted_medicines': inventory_predictions,
+        'medicine_details': medicine_details,
+        'interactions': interactions
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)

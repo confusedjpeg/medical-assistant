@@ -19,5 +19,53 @@
             <button type="submit">Get Recommendations</button>
         </form>
     </div>
+
+    <h2>Add Medicine to Inventory</h2>
+    <form id="add-medicine-form">
+        <input type="text" id="medicine_name" name="medicine_name" placeholder="Medicine Name">
+        <button type="submit">Add Medicine</button>
+    </form>
+    <div id="inventory"></div>
+    
+    <h2>Get Medicine Recommendation</h2>
+    <form id="predict-form">
+        <input type="text" id="symptoms" name="symptoms" placeholder="Enter Symptoms">
+        <button type="submit">Get Recommendation</button>
+    </form>
+    <div id="recommendations"></div>
+    
+    <script>
+        document.getElementById('add-medicine-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const medicineName = document.getElementById('medicine_name').value;
+            fetch('/add_medicine', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ medicine_name: medicineName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('inventory').innerText = 'Inventory: ' + data.inventory.join(', ');
+            });
+        });
+
+        document.getElementById('predict-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const symptoms = document.getElementById('symptoms').value;
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ symptoms: symptoms })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('recommendations').innerText = 'Recommended Medicines: ' + data.predicted_medicines.join(', ');
+            });
+        });
+    </script>
 </body>
 </html>

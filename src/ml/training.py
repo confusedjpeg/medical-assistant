@@ -1,34 +1,34 @@
-def train_model(data, labels):
+import os
+import pandas as pd
+import joblib
+from src.ml.model import MedicalAssistantModel
+
+def train_model():
     """
     Train the machine learning model using the provided data and labels.
-    
-    Parameters:
-    - data: The input features for training the model.
-    - labels: The corresponding labels for the input features.
     
     Returns:
     - model: The trained machine learning model.
     """
-    from sklearn.model_selection import train_test_split
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.metrics import accuracy_score
-    import joblib
-
-    # Split the data into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.2, random_state=42)
-
-    # Initialize the model
-    model = RandomForestClassifier()
-
-    # Train the model
-    model.fit(X_train, y_train)
-
+    # Load training data
+    data_path = os.path.join(os.path.dirname(__file__), 'data', 'training_data.csv')
+    training_data = pd.read_csv(data_path)
+    
+    X = training_data['symptoms'].tolist()
+    y = training_data['medicine'].tolist()
+    
+    # Initialize and train the model
+    model = MedicalAssistantModel()
+    model.train(X, y)
+    
     # Evaluate the model
-    predictions = model.predict(X_test)
-    accuracy = accuracy_score(y_test, predictions)
-    print(f"Model accuracy: {accuracy:.2f}")
-
+    X_test, y_test = X[:10], y[:10]  # Example test data, replace with actual test data
+    model.evaluate(X_test, y_test)
+    
     # Save the trained model
     joblib.dump(model, 'trained_model.pkl')
 
     return model
+
+if __name__ == '__main__':
+    train_model()
