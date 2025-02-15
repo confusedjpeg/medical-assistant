@@ -6,7 +6,6 @@ class DrugInteractionChecker:
         self.drug_data = self._load_drug_data()
     
     def _load_drug_data(self):
-        """Load drug interaction data from CSV file"""
         csv_path = os.path.join(os.path.dirname(__file__), 'data', 'drug_interactions.csv')
         try:
             return pd.read_csv(csv_path)
@@ -15,7 +14,6 @@ class DrugInteractionChecker:
             return pd.DataFrame()
 
     def check_interaction(self, drug1, drug2):
-        """Check if two drugs have known interactions"""
         interactions = self.drug_data[
             ((self.drug_data['drug1'].str.lower() == drug1.lower()) & 
              (self.drug_data['drug2'].str.lower() == drug2.lower())) |
@@ -25,16 +23,13 @@ class DrugInteractionChecker:
         return interactions['interaction_effect'].tolist() if not interactions.empty else []
 
     def get_drug_info(self, drug_name):
-        """Get general information about a drug"""
         drug_info = self.drug_data[self.drug_data['drug1'] == drug_name]
         return drug_info.to_dict('records') if not drug_info.empty else {}
 
     def get_all_drugs(self):
-        """Get list of all drugs in the database"""
         return list(set(self.drug_data['drug1'].tolist() + self.drug_data['drug2'].tolist()))
 
 def get_interaction_recommendations(drug_list):
-    """Get all potential interactions for a list of drugs"""
     checker = DrugInteractionChecker()
     interactions = []
     

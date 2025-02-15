@@ -5,60 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <title>Medical Assistant</title>
+    <style>
+        .container { text-align: center; margin-top: 50px; }
+        form { margin-bottom: 20px; }
+    </style>
 </head>
 <body>
     <div class="container">
         <h1>Welcome to the Medical Assistant</h1>
-        <form action="/submit" method="post">
-            <label for="medicines">Enter your current medicines:</label>
-            <input type="text" id="medicines" name="medicines" required>
-
-            <label for="symptoms">Describe your symptoms:</label>
-            <textarea id="symptoms" name="symptoms" required></textarea>
-
-            <button type="submit">Get Recommendations</button>
+        
+        <h2>Add Medicine to Inventory</h2>
+        <form id="add-medicine-form">
+            <input type="text" id="medicine_name" name="medicine_name" placeholder="Medicine Name" list="medicine-suggestions" required>
+            <datalist id="medicine-suggestions"></datalist>
+            <button type="submit">Add Medicine</button>
         </form>
+        <div id="inventory"></div>
+        
+        <h2>Get Medicine Recommendation</h2>
+        <form id="predict-form">
+            <input type="text" id="symptoms" name="symptoms" placeholder="Enter Symptoms" required>
+            <button type="submit">Get Recommendation</button>
+        </form>
+        <div id="recommendations"></div>
     </div>
-
-    <h2>Add Medicine to Inventory</h2>
-    <form id="add-medicine-form">
-        <input type="text" id="medicine_name" name="medicine_name" placeholder="Medicine Name">
-        <button type="submit">Add Medicine</button>
-    </form>
-    <div id="inventory"></div>
-    
-    <h2>Get Medicine Recommendation</h2>
-    <form id="predict-form">
-        <input type="text" id="symptoms" name="symptoms" placeholder="Enter Symptoms">
-        <button type="submit">Get Recommendation</button>
-    </form>
-    <div id="recommendations"></div>
     
     <script>
+        // Use the medicine inventory input for fuzzy autocomplete suggestions
+        const medicineInput = document.getElementById('medicine_name');
+        const datalist = document.getElementById('medicine-suggestions');
+        
+        medicineInput.addEventListener('input', function() {
+            const query = this.value;
+            if (query.length >= 1) { // Trigger suggestions as soon as one character is typed
+                fetch(`/autocomplete?query=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        datalist.innerHTML = '';
+                        data.suggestions.forEach(function(name) {
+                            const option = document.createElement('option');
+                            option.value = name;
+                            datalist.appendChild(option);
+                        });
+                    });
+            }
+        });
+        
         document.getElementById('add-medicine-form').addEventListener('submit', function(event) {
             event.preventDefault();
-            const medicineName = document.getElementById('medicine_name').value;
+            const medicineName = medicineInput.value;
             fetch('/add_medicine', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ medicine_name: medicineName })
             })
             .then(response => response.json())
             .then(data => {
                 document.getElementById('inventory').innerText = 'Inventory: ' + data.inventory.join(', ');
+                medicineInput.value = ''; // Clear input after adding
             });
         });
-
+        
         document.getElementById('predict-form').addEventListener('submit', function(event) {
             event.preventDefault();
             const symptoms = document.getElementById('symptoms').value;
             fetch('/predict', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ symptoms: symptoms })
             })
             .then(response => response.json())
